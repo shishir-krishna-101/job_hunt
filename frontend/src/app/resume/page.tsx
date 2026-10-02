@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useRef, useState } from "react";
+import { useRef, useState } from "react";
 import {
   ArrowUpRight,
   Check,
@@ -45,7 +45,7 @@ export default function ResumeStudio() {
     }
   };
 
-  const analyze = async (e: FormEvent) => {
+  const analyze = async () => {
     e.preventDefault();
     setLoading(true);
     setNotice("");
