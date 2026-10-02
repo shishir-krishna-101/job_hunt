@@ -363,6 +363,20 @@ a {
   overflow-x: auto;
 }
 
+.filter-chip select {
+  appearance: none;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  cursor: pointer;
+  padding: 0 2px;
+}
+.filter-chip select option {
+  color: #171815;
+  background: #fff;
+}
 .filter-chip {
   display: inline-flex;
   align-items: center;
