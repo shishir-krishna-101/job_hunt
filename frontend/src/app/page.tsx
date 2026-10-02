@@ -128,9 +128,9 @@ function MultiRoleFilter({
 
 export default function JobDashboard() {
   const [roles, setRoles] = useState<string[]>(["DevOps Engineer"]);
-  const [location, setLocation] = useState("Bangalore");
-  const [experience, setExperience] = useState("mid-level");
-  const [employmentType, setEmploymentType] = useState("FULLTIME");
+  const [location, setLocation] = useState("India");
+  const [experience, setExperience] = useState("");
+  const [employmentType, setEmploymentType] = useState("");
   const [datePosted, setDatePosted] = useState("all");
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(false);
