@@ -123,6 +123,8 @@ def _serialize_job(job: models.Job) -> dict:
         "source": job.source,
         "enrichment_status": job.enrichment_status or "pending",
         "enriched_at": job.enriched_at,
+        "match_percentage": job.match_percentage,
+        "resume_feedback": job.resume_feedback,
     }
 
 
