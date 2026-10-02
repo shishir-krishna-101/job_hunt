@@ -12,7 +12,6 @@ const navItems = [
   { href: "/", label: "Jobs", icon: BriefcaseBusiness },
   { href: "/resume", label: "Resume", icon: FileText },
   { href: "/explore", label: "To Explore", icon: Compass },
-  { href: "/profile", label: "Profile", icon: UserRound },
 ];
 
 export default function RootLayout({
