@@ -188,6 +188,15 @@ def resume_status(db: Session = Depends(get_db)):
     return {"uploaded": bool(text), "characters_extracted": len(text)}
 
 
+@app.get("/api/resume")
+def get_resume(db: Session = Depends(get_db)):
+    user = db.query(models.User).first()
+    return {
+        "uploaded": bool(user and (user.resume_text or "").strip()),
+        "resume_text": user.resume_text if user else "",
+    }
+
+
 @app.get("/api/jobs/fetch")
 def fetch_jobs(
     query: str,
