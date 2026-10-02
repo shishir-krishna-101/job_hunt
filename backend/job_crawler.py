@@ -5,11 +5,11 @@ from dotenv import load_dotenv
 load_dotenv()
 
 RAPIDAPI_KEY = os.getenv("RAPIDAPI_KEY")
-JSEARCH_URL = "https://jsearch.p.rapidapi.com/search"
+JSEARCH_URL = "https://jsearch.p.rapidapi.com/search-v2"
 
 
 def fetch_jobs_from_api(query: str, location: str = "remote"):
-    """Fetch current jobs through JSearch/RapidAPI."""
+    """Fetch current jobs through the current JSearch/RapidAPI search-v2 endpoint."""
     if not RAPIDAPI_KEY:
         raise RuntimeError(
             "RAPIDAPI_KEY is not configured. Add your RapidAPI JSearch key "
