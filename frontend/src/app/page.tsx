@@ -393,10 +393,11 @@ export default function JobDashboard() {
                 <BriefcaseBusiness size={25} />
               </div>
               <span className="section-kicker">GET STARTED</span>
-              <h3>Upload your resume, then search.</h3>
+              <h3>{uploadStatus === "success" ? "No jobs match these filters yet." : "Upload your resume, then search."}</h3>
               <p>
-                Your resume stays local. Searching jobs does not trigger Gemini
-                analysis; use the AI actions only when you need them.
+                {uploadStatus === "success"
+                  ? "Try clearing experience, work type, or date filters, or choose fewer roles."
+                  : "Your resume stays local. Searching jobs does not trigger AI analysis; use the AI actions only when you need them."}
               </p>
               <button
                 className="secondary-action"
@@ -539,14 +540,14 @@ export default function JobDashboard() {
             <div className="mini-filter">
               <div>
                 <span>Experience</span>
-                <strong>Mid-level</strong>
+                <strong>{experience || "Any experience"}</strong>
               </div>
               <ChevronDown size={15} />
             </div>
             <div className="mini-filter">
               <div>
                 <span>Work type</span>
-                <strong>Full-time</strong>
+                <strong>{employmentType ? employmentType.toLowerCase().replace("fulltime", "full-time") : "Any work type"}</strong>
               </div>
               <ChevronDown size={15} />
             </div>
