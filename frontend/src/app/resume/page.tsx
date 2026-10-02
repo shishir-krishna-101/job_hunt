@@ -4,6 +4,8 @@ import { useRef, useState } from "react";
 import {
   ArrowUpRight,
   Check,
+  CircleCheck,
+  CircleX,
   FileText,
   Percent,
   Sparkles,
@@ -18,11 +20,13 @@ export default function ResumeStudio() {
   const [result, setResult] = useState<any>(null);
   const [uploading, setUploading] = useState(false);
   const [notice, setNotice] = useState("");
+  const [uploadStatus, setUploadStatus] = useState<"idle" | "success" | "error">("idle");
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const uploadResume = async (file: File) => {
     setUploading(true);
     setNotice("");
+    setUploadStatus("idle");
 
     const formData = new FormData();
     formData.append("file", file);
@@ -46,6 +50,7 @@ export default function ResumeStudio() {
       }
 
       if (!response.ok || data?.status === "error") {
+        setUploadStatus("error");
         setNotice(
           data?.message || `Resume upload failed (HTTP ${response.status}).`
         );
@@ -56,13 +61,16 @@ export default function ResumeStudio() {
         if (typeof data.resume_text === "string") {
           setResume(data.resume_text);
         }
+        setUploadStatus("success");
         setNotice(
           `Resume uploaded successfully — ${data.characters_extracted ?? 0} characters extracted.`
         );
       } else {
+        setUploadStatus("error");
         setNotice(data?.message || "Upload failed.");
       }
     } catch (error: any) {
+      setUploadStatus("error");
       if (error?.name === "AbortError") {
         setNotice("Resume upload timed out after 30 seconds. Check the FastAPI terminal for an error.");
       } else {
@@ -84,7 +92,18 @@ export default function ResumeStudio() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ resume, jd }),
       });
-      const data = await res.json();
+      const raw = await res.text();
+      let data: any = {};
+      try {
+        data = raw ? JSON.parse(raw) : {};
+      } catch {
+        data = { error: "The backend returned an invalid response." };
+      }
+      if (!res.ok || data?.error) {
+        setResult(null);
+        setNotice(data?.details || data?.error || `Analysis failed (HTTP ${res.status}).`);
+        return;
+      }
       setResult(data);
     } catch {
       setNotice("Analysis failed. Check that the backend and Gemini key are available.");
@@ -136,10 +155,24 @@ export default function ResumeStudio() {
                 if (file) void uploadResume(file);
               }}
             />
-            <button className="secondary-action" type="button" onClick={() => fileInputRef.current?.click()}>
-              <Upload size={15} />
-              {uploading ? "Uploading..." : "Upload file"}
-            </button>
+            <div className="upload-control">
+              <button className="secondary-action" type="button" onClick={() => fileInputRef.current?.click()}>
+                <Upload size={15} />
+                {uploading ? "Uploading..." : "Upload file"}
+              </button>
+              {uploadStatus === "success" && (
+                <span className="upload-status upload-status-success" title="Resume uploaded and parsed successfully">
+                  <CircleCheck size={16} />
+                  Ready to analyze
+                </span>
+              )}
+              {uploadStatus === "error" && (
+                <span className="upload-status upload-status-error" title="Resume upload failed">
+                  <CircleX size={16} />
+                  Upload failed
+                </span>
+              )}
+            </div>
           </div>
 
           <textarea
