@@ -27,18 +27,35 @@ type Job = {
   job_description?: string;
 };
 
-function FilterButton({ children }: { children: React.ReactNode }) {
+function FilterSelect({
+  value,
+  onChange,
+  options,
+}: {
+  value: string;
+  onChange: (value: string) => void;
+  options: { label: string; value: string }[];
+}) {
   return (
-    <span className="filter-chip">
-      <span>{children}</span>
+    <label className="filter-chip">
+      <select value={value} onChange={(e) => onChange(e.target.value)}>
+        {options.map((option) => (
+          <option key={option.value} value={option.value}>
+            {option.label}
+          </option>
+        ))}
+      </select>
       <ChevronDown size={14} />
-    </span>
+    </label>
   );
 }
 
 export default function JobDashboard() {
   const [role, setRole] = useState("DevOps Engineer");
-  const [location, setLocation] = useState("India");
+  const [location, setLocation] = useState("Bangalore");
+  const [experience, setExperience] = useState("mid-level");
+  const [employmentType, setEmploymentType] = useState("FULLTIME");
+  const [datePosted, setDatePosted] = useState("all");
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -117,10 +134,16 @@ export default function JobDashboard() {
     setNotice("");
 
     try {
+      const params = new URLSearchParams({
+        query: role,
+        location,
+        country: "in",
+        experience,
+        employment_type: employmentType,
+        date_posted: datePosted,
+      });
       const response = await fetch(
-        `http://localhost:8000/api/jobs/fetch?query=${encodeURIComponent(
-          role
-        )}&location=${encodeURIComponent(location)}`
+        `http://localhost:8000/api/jobs/fetch?${params.toString()}`
       );
       const data = await response.json();
       if (!response.ok || data?.status === "error") {
@@ -224,11 +247,61 @@ export default function JobDashboard() {
         </div>
 
         <div className="filter-actions">
-          <FilterButton>{location}</FilterButton>
-          <FilterButton>{role}</FilterButton>
-          <FilterButton>Mid-level</FilterButton>
-          <FilterButton>Full-time</FilterButton>
-          <FilterButton>Date posted</FilterButton>
+          <FilterSelect
+            value={location}
+            onChange={setLocation}
+            options={[
+              { label: "Bangalore", value: "Bangalore" },
+              { label: "Hyderabad", value: "Hyderabad" },
+              { label: "Pune", value: "Pune" },
+              { label: "Mumbai", value: "Mumbai" },
+              { label: "Chennai", value: "Chennai" },
+              { label: "Delhi NCR", value: "Delhi NCR" },
+              { label: "India", value: "India" },
+            ]}
+          />
+          <FilterSelect
+            value={role}
+            onChange={setRole}
+            options={[
+              { label: "DevOps Engineer", value: "DevOps Engineer" },
+              { label: "SRE Engineer", value: "SRE Engineer" },
+              { label: "Cloud Engineer", value: "Cloud Engineer" },
+              { label: "Platform Engineer", value: "Platform Engineer" },
+              { label: "DevOps", value: "DevOps" },
+            ]}
+          />
+          <FilterSelect
+            value={experience}
+            onChange={setExperience}
+            options={[
+              { label: "Entry-level", value: "entry-level" },
+              { label: "Mid-level", value: "mid-level" },
+              { label: "Senior", value: "senior" },
+              { label: "All experience", value: "all" },
+            ]}
+          />
+          <FilterSelect
+            value={employmentType}
+            onChange={setEmploymentType}
+            options={[
+              { label: "Full-time", value: "FULLTIME" },
+              { label: "Contract", value: "CONTRACTOR" },
+              { label: "Part-time", value: "PARTTIME" },
+              { label: "Internship", value: "INTERN" },
+            ]}
+          />
+          <FilterSelect
+            value={datePosted}
+            onChange={setDatePosted}
+            options={[
+              { label: "Any date", value: "all" },
+              { label: "Today", value: "today" },
+              { label: "Last 3 days", value: "3days" },
+              { label: "Last week", value: "week" },
+              { label: "Last month", value: "month" },
+            ]}
+          />
         </div>
       </div>
 
