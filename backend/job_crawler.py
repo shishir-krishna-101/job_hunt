@@ -32,8 +32,6 @@ def fetch_jobs_from_api(
     query: str,
     location: str = "remote",
     country: str = "in",
-    experience: str = "",
-    employment_type: str = "",
     date_posted: str = "all",
     roles: list[str] | None = None,
 ):
@@ -57,14 +55,6 @@ def fetch_jobs_from_api(
     if not search_roles:
         raise RuntimeError("Select at least one job role.")
 
-    experience_requirements = {
-        "entry-level": "under_3_years_experience",
-        "mid-level": "more_than_3_years_experience",
-        "senior": "more_than_3_years_experience",
-        "all": None,
-    }
-    requirement = experience_requirements.get((experience or "").lower())
-
     headers = {
         "x-rapidapi-key": RAPIDAPI_KEY,
         "x-rapidapi-host": "jsearch.p.rapidapi.com",
@@ -83,18 +73,14 @@ def fetch_jobs_from_api(
         querystring = {
             "query": search_query,
             "page": "1",
-            "num_pages": "5",
+            "num_pages": "1",
             "country": country or "in",
         }
 
         if location:
             querystring["location"] = location
-        if employment_type:
-            querystring["employment_types"] = employment_type
         if date_posted and date_posted != "all":
             querystring["date_posted"] = date_posted
-        if requirement:
-            querystring["job_requirements"] = requirement
 
         try:
             response = requests.get(
@@ -103,10 +89,10 @@ def fetch_jobs_from_api(
                 params=querystring,
                 timeout=30,
             )
-        except requests.RequestException as exc:
-            raise RuntimeError(
-                f"JSearch request failed for '{role}': {exc}"
-            ) from exc
+        except requests.RequestException:
+            # A single provider timeout should not discard jobs already found
+            # for the other selected roles.
+            continue
 
         if response.status_code != 200:
             try:
