@@ -232,7 +232,7 @@ export default function JobDashboard() {
         setJobs(data);
         setNotice(
           data.length
-            ? `${data.length} roles found for ${role} in ${location}.`
+            ? `${data.length} jobs found matching any selected role${location ? ` in ${location}` : ""}.`
             : "No roles found for these filters."
         );
       } else {
