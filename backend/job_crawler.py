@@ -8,7 +8,14 @@ RAPIDAPI_KEY = os.getenv("RAPIDAPI_KEY")
 JSEARCH_URL = "https://jsearch.p.rapidapi.com/search-v2"
 
 
-def fetch_jobs_from_api(query: str, location: str = "remote"):
+def fetch_jobs_from_api(
+    query: str,
+    location: str = "remote",
+    country: str = "in",
+    experience: str = "mid-level",
+    employment_type: str = "FULLTIME",
+    date_posted: str = "all",
+):
     """Fetch current jobs through the current JSearch/RapidAPI search-v2 endpoint."""
     if not RAPIDAPI_KEY:
         raise RuntimeError(
@@ -20,7 +27,21 @@ def fetch_jobs_from_api(query: str, location: str = "remote"):
         "query": f"{query} in {location}",
         "page": "1",
         "num_pages": "1",
+        "country": country,
+        "location": location,
+        "employment_types": employment_type,
+        "date_posted": date_posted,
     }
+
+    experience_requirements = {
+        "entry-level": "under_3_years_experience",
+        "mid-level": "more_than_3_years_experience",
+        "senior": "more_than_3_years_experience",
+        "all": None,
+    }
+    requirement = experience_requirements.get(experience.lower())
+    if requirement:
+        querystring["job_requirements"] = requirement
     headers = {
         "x-rapidapi-key": RAPIDAPI_KEY,
         "x-rapidapi-host": "jsearch.p.rapidapi.com",
