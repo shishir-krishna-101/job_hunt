@@ -27,6 +27,11 @@ type Job = {
   job_description?: string;
   job_employment_type?: string;
   job_employment_types?: string[];
+  db_id?: number;
+  source?: string;
+  enrichment_status?: "pending" | "enriching" | "enriched" | "failed" | "unavailable";
+  enriched_at?: string;
+  match_percentage?: number | null;
   job_required_experience?: {
     no_experience_required?: boolean;
     required_experience_in_months?: number | null;
@@ -156,6 +161,43 @@ export default function JobDashboard() {
         // The upload control will show a status after the next upload attempt.
       });
   }, []);
+
+  useEffect(() => {
+    const ids = jobs.map((job) => job.job_id).filter(Boolean) as string[];
+    if (!ids.length) return;
+
+    const refresh = async () => {
+      try {
+        const response = await fetch(
+          `http://localhost:8000/api/jobs/enrichment-status?job_ids=${encodeURIComponent(ids.join(","))}`
+        );
+        if (!response.ok) return;
+        const data = await response.json();
+        const statusMap = new Map(
+          (data.jobs || []).map((item: any) => [item.job_id, item])
+        );
+
+        setJobs((current) =>
+          current.map((job) => {
+            const status = statusMap.get(job.job_id);
+            return status
+              ? {
+                  ...job,
+                  enrichment_status: status.status,
+                  enriched_at: status.enriched_at,
+                }
+              : job;
+          })
+        );
+      } catch {
+        // Enrichment status is informational; don't interrupt job search.
+      }
+    };
+
+    void refresh();
+    const timer = window.setInterval(refresh, 5000);
+    return () => window.clearInterval(timer);
+  }, [jobs.length]);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -519,7 +561,15 @@ export default function JobDashboard() {
                       </div>
 
                       <div className="job-actions">
-                        <span className="job-note">Use Resume Studio for an explicit AI match.</span>
+                        <span className="job-note">
+                          {job.enrichment_status === "enriched"
+                            ? "JD verified ✓"
+                            : job.enrichment_status === "failed"
+                              ? "JD enrichment failed — you can still open the original listing."
+                              : job.enrichment_status === "unavailable"
+                                ? "Tavily enrichment is not configured."
+                                : "Fetching full job description…"}
+                        </span>
                         {job.job_apply_link ? (
                           <div className="job-links">
                             <a
@@ -541,6 +591,15 @@ export default function JobDashboard() {
                               Apply
                               <ArrowUpRight size={15} />
                             </a>
+                            {job.enrichment_status === "enriched" && uploadStatus === "success" && (
+                              <a
+                                className="apply-action"
+                                href={`/resume?job_id=${encodeURIComponent(job.job_id || "")}`}
+                              >
+                                Analyze
+                                <Sparkles size={15} />
+                              </a>
+                            )}
                           </div>
                         ) : (
                           <span className="job-note">No external job URL was provided by the job provider.</span>
