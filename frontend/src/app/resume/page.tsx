@@ -1,96 +1,218 @@
 "use client";
-import { useState } from "react";
-import { FileText, Wand2, Percent } from "lucide-react";
+
+import { FormEvent, useRef, useState } from "react";
+import {
+  ArrowUpRight,
+  Check,
+  FileText,
+  Percent,
+  Sparkles,
+  Upload,
+  WandSparkles,
+} from "lucide-react";
 
 export default function ResumeStudio() {
   const [resume, setResume] = useState("");
   const [jd, setJd] = useState("");
   const [loading, setLoading] = useState(false);
   const [result, setResult] = useState<any>(null);
+  const [uploading, setUploading] = useState(false);
+  const [notice, setNotice] = useState("");
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const analyze = async () => {
+  const uploadResume = async (file: File) => {
+    setUploading(true);
+    setNotice("");
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const response = await fetch("http://localhost:8000/api/resume/upload", {
+        method: "POST",
+        body: formData,
+      });
+      const data = await response.json();
+      setNotice(
+        data.status === "success"
+          ? "Resume uploaded and stored locally."
+          : data.message || "Upload failed."
+      );
+    } catch {
+      setNotice("Backend is unavailable. Start FastAPI and try again.");
+    } finally {
+      setUploading(false);
+    }
+  };
+
+  const analyze = async (e: FormEvent) => {
+    e.preventDefault();
     setLoading(true);
+    setNotice("");
+
     try {
       const res = await fetch("http://localhost:8000/api/resume/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ resume, jd })
+        body: JSON.stringify({ resume, jd }),
       });
       const data = await res.json();
       setResult(data);
-    } catch (e) {
-      console.error(e);
+    } catch {
+      setNotice("Analysis failed. Check that the backend and Gemini key are available.");
+    } finally {
+      setLoading(false);
     }
-    setLoading(false);
   };
 
   return (
-    <div className="max-w-6xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8">
-      <div className="space-y-4">
-        <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2"><FileText /> Resume Studio</h2>
-        <p className="text-gray-600">Paste your resume and a job description to get a match score and ATS fixes.</p>
-        
+    <div className="inner-page">
+      <header className="inner-hero">
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Your Resume</label>
-          <textarea 
-            className="w-full h-48 p-4 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500"
-            placeholder="Paste your resume text here..."
+          <span className="eyebrow">RESUME WORKSPACE</span>
+          <h1>
+            Make every
+            <br />
+            <em>application count.</em>
+          </h1>
+          <p>
+            Compare your resume with a target job, surface missing skills, and
+            make intentional ATS improvements without running AI in the background.
+          </p>
+        </div>
+        <div className="hero-note">
+          <div className="hero-note-icon"><FileText size={18} /></div>
+          <div>
+            <span>Local first</span>
+            <strong>Upload once. Analyze only when you choose.</strong>
+          </div>
+        </div>
+      </header>
+
+      {notice && <div className="inline-notice inner-notice">{notice}</div>}
+
+      <div className="studio-grid">
+        <section className="studio-panel">
+          <div className="panel-heading">
+            <div>
+              <span className="section-kicker">01 / SOURCE</span>
+              <h2>Your resume</h2>
+            </div>
+            <input
+              ref={fileInputRef}
+              type="file"
+              accept=".pdf,.doc,.docx"
+              className="sr-only"
+              onChange={(e) => {
+                const file = e.target.files?.[0];
+                if (file) void uploadResume(file);
+              }}
+            />
+            <button className="secondary-action" type="button" onClick={() => fileInputRef.current?.click()}>
+              <Upload size={15} />
+              {uploading ? "Uploading..." : "Upload file"}
+            </button>
+          </div>
+
+          <textarea
+            className="studio-textarea"
+            placeholder="Paste your resume text here, or upload the file above."
             value={resume}
-            onChange={e => setResume(e.target.value)}
+            onChange={(e) => setResume(e.target.value)}
           />
-        </div>
+        </section>
 
-        <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Target Job Description</label>
-          <textarea 
-            className="w-full h-48 p-4 rounded-xl border border-gray-300 focus:ring-2 focus:ring-blue-500"
-            placeholder="Paste the job description here..."
+        <section className="studio-panel">
+          <div className="panel-heading">
+            <div>
+              <span className="section-kicker">02 / TARGET</span>
+              <h2>Job description</h2>
+            </div>
+            <span className="panel-meta">One role at a time</span>
+          </div>
+
+          <textarea
+            className="studio-textarea"
+            placeholder="Paste the job description you want to target."
             value={jd}
-            onChange={e => setJd(e.target.value)}
+            onChange={(e) => setJd(e.target.value)}
           />
-        </div>
+        </section>
+      </div>
 
-        <button 
+      <div className="studio-cta">
+        <div>
+          <span className="section-kicker">03 / ANALYZE</span>
+          <h2>See where the story needs work.</h2>
+        </div>
+        <button
+          className="search-action"
+          type="button"
           onClick={analyze}
-          className="w-full py-3 bg-blue-600 text-white rounded-xl font-medium hover:bg-blue-700 transition flex items-center justify-center gap-2"
           disabled={loading || !resume || !jd}
         >
-          {loading ? "Analyzing with AI..." : <><Wand2 className="w-5 h-5"/> Analyze Match & Fix Resume</>}
+          <WandSparkles size={17} />
+          {loading ? "Analyzing..." : "Analyze match"}
+          <ArrowUpRight size={17} />
         </button>
       </div>
 
-      <div className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm overflow-auto">
-        <h3 className="text-xl font-bold text-gray-800 mb-4">AI Analysis</h3>
-        {result ? (
-          <div className="space-y-6">
-            <div className="flex items-center gap-4 p-4 bg-blue-50 rounded-lg">
-              <Percent className="w-8 h-8 text-blue-600" />
+      <section className="analysis-layout">
+        <div className="analysis-score">
+          <span className="section-kicker">MATCH SCORE</span>
+          {result ? (
+            <>
+              <strong>{result.match_percentage}%</strong>
+              <p>Based on the resume and job description you supplied.</p>
+            </>
+          ) : (
+            <>
+              <strong>—</strong>
+              <p>Run an analysis to generate a score and missing-skill list.</p>
+            </>
+          )}
+        </div>
+
+        <div className="analysis-panel">
+          <div className="panel-heading">
+            <div>
+              <span className="section-kicker">AI REVIEW</span>
+              <h2>What to improve</h2>
+            </div>
+            <Sparkles size={18} />
+          </div>
+
+          {result ? (
+            <div className="analysis-content">
               <div>
-                <p className="text-sm text-gray-600">Match Score</p>
-                <p className="text-2xl font-bold text-blue-700">{result.match_percentage}%</p>
+                <h3>Missing skills</h3>
+                <div className="skill-list">
+                  {result.missing_skills?.map((skill: string) => (
+                    <span key={skill}>{skill}</span>
+                  ))}
+                </div>
+              </div>
+              <div>
+                <h3>Resume feedback</h3>
+                <p className="analysis-copy">{result.resume_feedback || "No feedback returned."}</p>
               </div>
             </div>
-            <div>
-              <h4 className="font-semibold text-gray-800">Missing Skills (Added to Explore tab)</h4>
-              <div className="flex flex-wrap gap-2 mt-2">
-                {result.missing_skills?.map((skill: string) => (
-                  <span key={skill} className="px-3 py-1 bg-red-50 text-red-600 rounded-full text-sm font-medium">
-                    {skill}
-                  </span>
-                ))}
-              </div>
+          ) : (
+            <div className="analysis-empty">
+              <div className="empty-mark"><Percent size={22} /></div>
+              <h3>Nothing has been analyzed yet.</h3>
+              <p>AI stays idle until you press Analyze match.</p>
             </div>
-            <div>
-              <h4 className="font-semibold text-gray-800">Feedback</h4>
-              <p className="text-gray-600 mt-1">{result.resume_feedback}</p>
-            </div>
-          </div>
-        ) : (
-          <div className="flex h-full items-center justify-center text-gray-400 text-center">
-            Run the analysis to see your match score, missing skills, and ATS-friendly suggestions.
-          </div>
-        )}
-      </div>
+          )}
+        </div>
+      </section>
+
+      {result && (
+        <div className="success-strip">
+          <Check size={16} />
+          Missing skills are stored locally and can appear in To Explore.
+        </div>
+      )}
     </div>
   );
 }
