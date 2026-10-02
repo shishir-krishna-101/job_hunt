@@ -520,15 +520,31 @@ export default function JobDashboard() {
 
                       <div className="job-actions">
                         <span className="job-note">Use Resume Studio for an explicit AI match.</span>
-                        <a
-                          className="apply-action"
-                          href={job.job_apply_link}
-                          target="_blank"
-                          rel="noreferrer"
-                        >
-                          Apply
-                          <ArrowUpRight size={15} />
-                        </a>
+                        {job.job_apply_link ? (
+                          <div className="job-links">
+                            <a
+                              className="job-details-link"
+                              href={job.job_apply_link}
+                              target="_blank"
+                              rel="noreferrer"
+                              title={job.job_apply_link}
+                            >
+                              View job details
+                              <ArrowUpRight size={15} />
+                            </a>
+                            <a
+                              className="apply-action"
+                              href={job.job_apply_link}
+                              target="_blank"
+                              rel="noreferrer"
+                            >
+                              Apply
+                              <ArrowUpRight size={15} />
+                            </a>
+                          </div>
+                        ) : (
+                          <span className="job-note">No external job URL was provided by the job provider.</span>
+                        )}
                       </div>
                     </div>
 
