@@ -24,6 +24,7 @@ type Job = {
   job_country?: string;
   job_apply_link?: string;
   job_posted_at_datetime_utc?: string;
+  job_description?: string;
 };
 
 function FilterButton({ children }: { children: React.ReactNode }) {
