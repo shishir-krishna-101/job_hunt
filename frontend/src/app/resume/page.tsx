@@ -33,6 +33,10 @@ export default function ResumeStudio() {
         body: formData,
       });
       const data = await response.json();
+      if (!response.ok) {
+        setNotice(data?.message || `Resume upload failed (HTTP ${response.status}).`);
+        return;
+      }
       setNotice(
         data.status === "success"
           ? "Resume uploaded and stored locally."
