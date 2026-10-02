@@ -318,7 +318,7 @@ export default function JobDashboard() {
             <input
               ref={fileInputRef}
               type="file"
-              accept=".pdf,.doc,.docx"
+              accept=".pdf,.docx"
               className="sr-only"
               onChange={handleFileUpload}
             />
