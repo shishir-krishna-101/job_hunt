@@ -77,9 +77,24 @@ def resume_status(db: Session = Depends(get_db)):
     }
 
 @app.get("/api/jobs/fetch")
-def fetch_jobs(query: str, location: str = "India", db: Session = Depends(get_db)):
+def fetch_jobs(
+    query: str,
+    location: str = "India",
+    country: str = "in",
+    experience: str = "mid-level",
+    employment_type: str = "FULLTIME",
+    date_posted: str = "all",
+    db: Session = Depends(get_db),
+):
     try:
-        return job_crawler.fetch_jobs_from_api(query, location)
+        return job_crawler.fetch_jobs_from_api(
+            query=query,
+            location=location,
+            country=country,
+            experience=experience,
+            employment_type=employment_type,
+            date_posted=date_posted,
+        )
     except Exception as e:
         return {"status": "error", "message": str(e), "data": []}
 
