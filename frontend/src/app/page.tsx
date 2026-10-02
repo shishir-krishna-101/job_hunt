@@ -37,7 +37,7 @@ function FilterSelect({
   options: { label: string; value: string }[];
 }) {
   return (
-    <label className="filter-chip">
+    <label className={`filter-chip ${value ? "filter-chip-active" : ""}`}>
       <select value={value} onChange={(e) => onChange(e.target.value)}>
         {options.map((option) => (
           <option key={option.value} value={option.value}>
@@ -46,6 +46,20 @@ function FilterSelect({
         ))}
       </select>
       <ChevronDown size={14} />
+      {value && value !== "all" && (
+        <button
+          type="button"
+          className="filter-clear"
+          aria-label="Clear filter"
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            onChange("");
+          }}
+        >
+          ×
+        </button>
+      )}
     </label>
   );
 }
@@ -88,6 +102,15 @@ function MultiRoleFilter({
         <ChevronDown size={14} />
       </summary>
       <div className="multi-role-menu">
+        {roles.length > 0 && (
+          <button
+            type="button"
+            className="clear-roles"
+            onClick={() => onChange([])}
+          >
+            Clear all roles
+          </button>
+        )}
         {options.map((option) => (
           <label key={option} className="role-option">
             <input
@@ -305,6 +328,7 @@ export default function JobDashboard() {
             value={location}
             onChange={setLocation}
             options={[
+              { label: "Any location", value: "" },
               { label: "Bangalore", value: "Bangalore" },
               { label: "Hyderabad", value: "Hyderabad" },
               { label: "Pune", value: "Pune" },
@@ -319,6 +343,7 @@ export default function JobDashboard() {
             value={experience}
             onChange={setExperience}
             options={[
+              { label: "Any experience", value: "" },
               { label: "Entry-level", value: "entry-level" },
               { label: "Mid-level", value: "mid-level" },
               { label: "Senior", value: "senior" },
@@ -329,6 +354,7 @@ export default function JobDashboard() {
             value={employmentType}
             onChange={setEmploymentType}
             options={[
+              { label: "Any work type", value: "" },
               { label: "Full-time", value: "FULLTIME" },
               { label: "Contract", value: "CONTRACTOR" },
               { label: "Part-time", value: "PARTTIME" },
