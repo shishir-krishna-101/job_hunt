@@ -76,19 +76,36 @@ def fetch_jobs(query: str, location: str = "India", db: Session = Depends(get_db
 
 @app.post("/api/resume/analyze")
 def analyze_resume_endpoint(req: AnalyzeRequest, db: Session = Depends(get_db)):
-    result = ai_service.analyze_job_match(req.resume, req.jd)
-    
-    # Store missing skills in DB
-    if "missing_skills" in result and isinstance(result["missing_skills"], list):
-        for skill in result["missing_skills"]:
-            # Check if skill exists (simplified logic)
-            existing = db.query(models.MissingSkill).filter(models.MissingSkill.skill_name == skill).first()
-            if not existing:
-                new_skill = models.MissingSkill(skill_name=skill, resource_url=f"https://www.google.com/search?q=learn+{skill}")
-                db.add(new_skill)
-        db.commit()
+    if not req.resume.strip():
+        return {"error": "Resume text is empty. Upload a readable PDF/DOCX or paste your resume."}
+    if not req.jd.strip():
+        return {"error": "Job description is empty. Paste the target job description first."}
 
-    return result
+    try:
+        result = ai_service.analyze_job_match(req.resume, req.jd)
+
+        # Store missing skills in DB
+        if "missing_skills" in result and isinstance(result["missing_skills"], list):
+            for skill in result["missing_skills"]:
+                existing = db.query(models.MissingSkill).filter(
+                    models.MissingSkill.skill_name == skill
+                ).first()
+                if not existing:
+                    db.add(
+                        models.MissingSkill(
+                            skill_name=skill,
+                            resource_url=f"https://www.google.com/search?q=learn+{skill}",
+                        )
+                    )
+            db.commit()
+
+        return result
+    except Exception as e:
+        db.rollback()
+        return {
+            "error": "AI analysis failed.",
+            "details": str(e),
+        }
 
 @app.get("/api/explore")
 def get_explore_skills(db: Session = Depends(get_db)):
