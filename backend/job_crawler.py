@@ -42,14 +42,17 @@ def fetch_jobs_from_api(
 
     for role in search_roles:
         querystring = {
-            "query": f"{role} in {location}",
+            "query": f"{role} in {location}" if location else role,
             "page": "1",
             "num_pages": "1",
             "country": country,
-            "location": location,
-            "employment_types": employment_type,
-            "date_posted": date_posted,
         }
+        if location:
+            querystring["location"] = location
+        if employment_type:
+            querystring["employment_types"] = employment_type
+        if date_posted and date_posted != "all":
+            querystring["date_posted"] = date_posted
         if requirement:
             querystring["job_requirements"] = requirement
 
