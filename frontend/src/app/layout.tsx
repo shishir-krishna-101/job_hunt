@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { BriefcaseBusiness, Compass, FileText, UserRound, Sparkles } from "lucide-react";
+import { BriefcaseBusiness, Compass, FileText } from "lucide-react";
 import Link from "next/link";
 import "./globals.css";
 
@@ -41,9 +41,6 @@ export default function RootLayout({
 
           <main className="app-main">{children}</main>
 
-          <button className="chat-orb" type="button" aria-label="Open AI assistant">
-            <Sparkles size={21} />
-          </button>
         </div>
       </body>
     </html>
