@@ -84,9 +84,11 @@ def fetch_jobs(
     experience: str = "mid-level",
     employment_type: str = "FULLTIME",
     date_posted: str = "all",
+    roles: str | None = None,
     db: Session = Depends(get_db),
 ):
     try:
+        selected_roles = [item.strip() for item in roles.split("|") if item.strip()] if roles else None
         return job_crawler.fetch_jobs_from_api(
             query=query,
             location=location,
@@ -94,6 +96,7 @@ def fetch_jobs(
             experience=experience,
             employment_type=employment_type,
             date_posted=date_posted,
+            roles=selected_roles,
         )
     except Exception as e:
         return {"status": "error", "message": str(e), "data": []}
