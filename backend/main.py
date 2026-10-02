@@ -67,6 +67,15 @@ async def upload_resume_file(file: UploadFile = File(...), db: Session = Depends
         db.rollback()
         return {"status": "error", "message": f"Resume processing failed: {str(e)}"}
 
+@app.get("/api/resume/status")
+def resume_status(db: Session = Depends(get_db)):
+    user = db.query(models.User).first()
+    text = (user.resume_text or "").strip() if user else ""
+    return {
+        "uploaded": bool(text),
+        "characters_extracted": len(text),
+    }
+
 @app.get("/api/jobs/fetch")
 def fetch_jobs(query: str, location: str = "India", db: Session = Depends(get_db)):
     try:
