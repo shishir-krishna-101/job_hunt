@@ -27,24 +27,49 @@ export default function ResumeStudio() {
     const formData = new FormData();
     formData.append("file", file);
 
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 30000);
+
     try {
       const response = await fetch("http://localhost:8000/api/resume/upload", {
         method: "POST",
         body: formData,
+        signal: controller.signal,
       });
-      const data = await response.json();
-      if (!response.ok) {
-        setNotice(data?.message || `Resume upload failed (HTTP ${response.status}).`);
+
+      const raw = await response.text();
+      let data: any = {};
+      try {
+        data = raw ? JSON.parse(raw) : {};
+      } catch {
+        data = { message: raw || "The backend returned an invalid response." };
+      }
+
+      if (!response.ok || data?.status === "error") {
+        setNotice(
+          data?.message || `Resume upload failed (HTTP ${response.status}).`
+        );
         return;
       }
-      setNotice(
-        data.status === "success"
-          ? "Resume uploaded and stored locally."
-          : data.message || "Upload failed."
-      );
-    } catch {
-      setNotice("Backend is unavailable. Start FastAPI and try again.");
+
+      if (data?.status === "success") {
+        if (typeof data.resume_text === "string") {
+          setResume(data.resume_text);
+        }
+        setNotice(
+          `Resume uploaded successfully — ${data.characters_extracted ?? 0} characters extracted.`
+        );
+      } else {
+        setNotice(data?.message || "Upload failed.");
+      }
+    } catch (error: any) {
+      if (error?.name === "AbortError") {
+        setNotice("Resume upload timed out after 30 seconds. Check the FastAPI terminal for an error.");
+      } else {
+        setNotice("Could not reach FastAPI at http://localhost:8000. Make sure the backend is running.");
+      }
     } finally {
+      window.clearTimeout(timeout);
       setUploading(false);
     }
   };
