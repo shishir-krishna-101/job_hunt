@@ -46,7 +46,6 @@ export default function ResumeStudio() {
   };
 
   const analyze = async () => {
-    e.preventDefault();
     setLoading(true);
     setNotice("");
 
