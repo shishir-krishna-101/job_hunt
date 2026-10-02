@@ -61,6 +61,7 @@ async def upload_resume_file(file: UploadFile = File(...), db: Session = Depends
             "message": "Resume uploaded and parsed successfully",
             "filename": file.filename,
             "characters_extracted": len(text),
+            "resume_text": text,
         }
     except Exception as e:
         db.rollback()
