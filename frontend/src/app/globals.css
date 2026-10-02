@@ -363,6 +363,48 @@ a {
   overflow-x: auto;
 }
 
+.multi-role-filter {
+  position: relative;
+  min-width: 180px;
+}
+.multi-role-filter summary {
+  list-style: none;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  cursor: pointer;
+}
+.multi-role-filter summary::-webkit-details-marker {
+  display: none;
+}
+.multi-role-menu {
+  position: absolute;
+  z-index: 20;
+  top: calc(100% + 8px);
+  left: 0;
+  min-width: 260px;
+  padding: 8px;
+  background: var(--paper, #fff);
+  border: 1px solid rgba(23, 24, 21, 0.12);
+  border-radius: 14px;
+  box-shadow: 0 14px 35px rgba(23, 24, 21, 0.12);
+}
+.role-option {
+  display: flex;
+  align-items: center;
+  gap: 9px;
+  padding: 9px 10px;
+  border-radius: 9px;
+  cursor: pointer;
+  font-size: 12px;
+}
+.role-option:hover {
+  background: rgba(205, 244, 70, 0.22);
+}
+.role-option input {
+  accent-color: #171815;
+}
 .filter-chip select {
   appearance: none;
   border: 0;
