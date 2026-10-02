@@ -213,7 +213,8 @@ export default function JobDashboard() {
   const searchJobs = async (e?: FormEvent) => {
     e?.preventDefault();
     setLoading(true);
-    setNotice("");
+    setJobs([]);
+    setNotice("Starting job search…");
 
     try {
       const params = new URLSearchParams({
@@ -223,28 +224,97 @@ export default function JobDashboard() {
         date_posted: datePosted,
         roles: roles.join("|"),
       });
+
       const response = await fetch(
-        `http://localhost:8000/api/jobs/fetch?${params.toString()}`
+        `http://localhost:8000/api/jobs/stream?${params.toString()}`
       );
-      const data = await response.json();
-      if (!response.ok || data?.status === "error") {
-        setJobs([]);
-        setNotice(data?.message || `Job search failed (HTTP ${response.status}).`);
-        return;
+
+      if (!response.ok || !response.body) {
+        const message = await response.text();
+        throw new Error(message || `Job search failed (HTTP ${response.status}).`);
       }
-      if (Array.isArray(data)) {
-        setJobs(data);
+
+      const reader = response.body.getReader();
+      const decoder = new TextDecoder();
+      let buffer = "";
+      let total = 0;
+      let completedRoles = 0;
+      const failedRoles: string[] = [];
+
+      const addJobs = (incoming: Job[]) => {
+        setJobs((current) => {
+          const seen = new Set(
+            current.map((job) => job.job_id || job.job_apply_link || job.job_title)
+          );
+          const fresh = incoming.filter((job) => {
+            const key = job.job_id || job.job_apply_link || job.job_title;
+            if (seen.has(key)) return false;
+            seen.add(key);
+            return true;
+          });
+          return [...current, ...fresh];
+        });
+      };
+
+      const processLine = (line: string) => {
+        if (!line.trim()) return;
+        const event = JSON.parse(line);
+
+        if (event.type === "jobs") {
+          addJobs(event.jobs || []);
+          total += event.count || 0;
+          completedRoles += 1;
+          setNotice(
+            `${total} jobs loaded — ${completedRoles} of ${roles.length} role searches completed.`
+          );
+        } else if (event.type === "role_error") {
+          failedRoles.push(event.role);
+          completedRoles += 1;
+          setNotice(
+            `${total} jobs loaded. ${failedRoles.length} role search${failedRoles.length === 1 ? "" : "es"} failed; continuing with the others.`
+          );
+        } else if (event.type === "error") {
+          throw new Error(event.message || "Job search failed.");
+        }
+      };
+
+      while (true) {
+        const { value, done } = await reader.read();
+        if (done) break;
+
+        buffer += decoder.decode(value, { stream: true });
+        const lines = buffer.split("\\n");
+        buffer = lines.pop() || "";
+
+        for (const line of lines) {
+          processLine(line);
+        }
+      }
+
+      buffer += decoder.decode();
+      if (buffer.trim()) processLine(buffer);
+
+      if (total === 0) {
         setNotice(
-          data.length
-            ? `${data.length} jobs found matching any selected role${location ? ` in ${location}` : ""}.`
-            : "No roles found for these filters."
+          failedRoles.length === roles.length
+            ? "All role searches failed. Check the backend/provider response."
+            : "No jobs were returned by the provider for these roles."
+        );
+      } else if (failedRoles.length > 0) {
+        setNotice(
+          `${total} jobs loaded. Some role searches failed: ${failedRoles.join(", ")}.`
         );
       } else {
-        setNotice(data?.message || "No jobs were returned.");
+        setNotice(`${total} jobs loaded successfully.`);
       }
     } catch (error) {
       console.error(error);
-      setNotice("Could not fetch jobs. Make sure the backend is running.");
+      setJobs([]);
+      setNotice(
+        error instanceof Error
+          ? error.message
+          : "Could not fetch jobs. Make sure the backend is running."
+      );
     } finally {
       setLoading(false);
     }
