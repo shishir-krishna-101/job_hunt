@@ -25,6 +25,14 @@ type Job = {
   job_apply_link?: string;
   job_posted_at_datetime_utc?: string;
   job_description?: string;
+  job_employment_type?: string;
+  job_employment_types?: string[];
+  job_required_experience?: {
+    no_experience_required?: boolean;
+    required_experience_in_months?: number | null;
+    experience_mentioned?: boolean;
+    experience_preferred?: boolean;
+  };
 };
 
 function FilterSelect({
@@ -129,9 +137,7 @@ function MultiRoleFilter({
 export default function JobDashboard() {
   const [roles, setRoles] = useState<string[]>(["DevOps Engineer"]);
   const [location, setLocation] = useState("India");
-  const [experience, setExperience] = useState("");
-  const [employmentType, setEmploymentType] = useState("");
-  const [datePosted, setDatePosted] = useState("all");
+   const [datePosted, setDatePosted] = useState("all");
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -214,8 +220,6 @@ export default function JobDashboard() {
         query: roles.join(", "),
         location,
         country: "in",
-        experience,
-        employment_type: employmentType,
         date_posted: datePosted,
         roles: roles.join("|"),
       });
@@ -340,28 +344,6 @@ export default function JobDashboard() {
           />
           <MultiRoleFilter roles={roles} onChange={setRoles} />
           <FilterSelect
-            value={experience}
-            onChange={setExperience}
-            options={[
-              { label: "Any experience", value: "" },
-              { label: "Entry-level", value: "entry-level" },
-              { label: "Mid-level", value: "mid-level" },
-              { label: "Senior", value: "senior" },
-              { label: "All experience", value: "all" },
-            ]}
-          />
-          <FilterSelect
-            value={employmentType}
-            onChange={setEmploymentType}
-            options={[
-              { label: "Any work type", value: "" },
-              { label: "Full-time", value: "FULLTIME" },
-              { label: "Contract", value: "CONTRACTOR" },
-              { label: "Part-time", value: "PARTTIME" },
-              { label: "Internship", value: "INTERN" },
-            ]}
-          />
-          <FilterSelect
             value={datePosted}
             onChange={setDatePosted}
             options={[
@@ -396,7 +378,7 @@ export default function JobDashboard() {
               <h3>{uploadStatus === "success" ? "No jobs match these filters yet." : "Upload your resume, then search."}</h3>
               <p>
                 {uploadStatus === "success"
-                  ? "Try clearing experience, work type, or date filters, or choose fewer roles."
+                  ? "Try another location, a wider date range, or choose fewer roles."
                   : "Your resume stays local. Searching jobs does not trigger AI analysis; use the AI actions only when you need them."}
               </p>
               <button
@@ -415,6 +397,15 @@ export default function JobDashboard() {
                 const city = job.job_city || job.job_state || job.job_country || location;
                 const title = job.job_title || "Untitled role";
                 const initial = company.slice(0, 1).toUpperCase();
+                const workType = job.job_employment_type || job.job_employment_types?.[0] || "Not specified";
+                const requiredMonths = job.job_required_experience?.required_experience_in_months;
+                const experienceText = job.job_required_experience?.no_experience_required
+                  ? "No experience required"
+                  : typeof requiredMonths === "number"
+                    ? `${Math.max(1, Math.round(requiredMonths / 12))}+ years`
+                    : job.job_required_experience?.experience_mentioned
+                      ? "Experience required"
+                      : "Not specified";
 
                 return (
                   <article className="job-card" key={job.job_id || index}>
@@ -436,11 +427,11 @@ export default function JobDashboard() {
                         </span>
                         <span>
                           <BriefcaseBusiness size={14} />
-                          Full-time
+                          {workType}
                         </span>
                         <span>
                           <Clock3 size={14} />
-                          2+ years
+                          {experienceText}
                         </span>
                       </div>
 
@@ -534,20 +525,6 @@ export default function JobDashboard() {
               <div>
                 <span>Location</span>
                 <strong>{location}</strong>
-              </div>
-              <ChevronDown size={15} />
-            </div>
-            <div className="mini-filter">
-              <div>
-                <span>Experience</span>
-                <strong>{experience || "Any experience"}</strong>
-              </div>
-              <ChevronDown size={15} />
-            </div>
-            <div className="mini-filter">
-              <div>
-                <span>Work type</span>
-                <strong>{employmentType ? employmentType.toLowerCase().replace("fulltime", "full-time") : "Any work type"}</strong>
               </div>
               <ChevronDown size={15} />
             </div>
