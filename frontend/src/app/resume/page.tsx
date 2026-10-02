@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   ArrowUpRight,
   Check,
@@ -21,7 +21,49 @@ export default function ResumeStudio() {
   const [uploading, setUploading] = useState(false);
   const [notice, setNotice] = useState("");
   const [uploadStatus, setUploadStatus] = useState<"idle" | "success" | "error">("idle");
+  const [jobId, setJobId] = useState("");
+  const [jobTitle, setJobTitle] = useState("");
+  const [tailoredResume, setTailoredResume] = useState("");
+  const [tailoring, setTailoring] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const selectedJobId = params.get("job_id") || "";
+    if (!selectedJobId) return;
+
+    setJobId(selectedJobId);
+
+    const loadJobWorkspace = async () => {
+      try {
+        const [resumeResponse, jobResponse] = await Promise.all([
+          fetch("http://localhost:8000/api/resume"),
+          fetch(`http://localhost:8000/api/jobs/${encodeURIComponent(selectedJobId)}`),
+        ]);
+
+        if (resumeResponse.ok) {
+          const resumeData = await resumeResponse.json();
+          if (resumeData.uploaded) {
+            setResume(resumeData.resume_text || "");
+            setUploadStatus("success");
+          }
+        }
+
+        if (jobResponse.ok) {
+          const job = await jobResponse.json();
+          setJd(job.job_description || "");
+          setJobTitle(job.job_title || "Selected job");
+          if (job.enrichment_status !== "enriched") {
+            setNotice("This job is still being enriched. You can view the listing now and analyze it when the full JD is ready.");
+          }
+        }
+      } catch {
+        setNotice("Could not load the selected job workspace.");
+      }
+    };
+
+    void loadJobWorkspace();
+  }, []);
 
   const uploadResume = async (file: File) => {
     setUploading(true);
@@ -91,15 +133,16 @@ export default function ResumeStudio() {
     setLoading(true);
     setNotice("");
 
-    const controller = new AbortController();
-    const timeout = window.setTimeout(() => controller.abort(), 90000);
-
     try {
-      const res = await fetch("http://localhost:8000/api/resume/analyze", {
+      const url = jobId
+        ? `http://localhost:8000/api/jobs/${encodeURIComponent(jobId)}/analyze`
+        : "http://localhost:8000/api/resume/analyze";
+      const body = jobId ? undefined : JSON.stringify({ resume, jd });
+
+      const res = await fetch(url, {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ resume, jd }),
-        signal: controller.signal,
+        headers: body ? { "Content-Type": "application/json" } : undefined,
+        body,
       });
       const raw = await res.text();
       let data: any = {};
@@ -108,22 +151,44 @@ export default function ResumeStudio() {
       } catch {
         data = { error: "The backend returned an invalid response." };
       }
-      if (!res.ok || data?.error) {
+      if (!res.ok || data?.error || data?.detail) {
         setResult(null);
-        setNotice(data?.details || data?.error || `Analysis failed (HTTP ${res.status}).`);
+        setNotice(data?.details || data?.error || data?.detail || `Analysis failed (HTTP ${res.status}).`);
         return;
       }
       setResult(data);
+      setNotice("Analysis complete. The result is stored with this job.");
     } catch (error: any) {
       setResult(null);
-      setNotice(
-        error?.name === "AbortError"
-          ? "Analysis timed out after 90 seconds. Check the FastAPI terminal."
-          : "Could not reach FastAPI. Check that the backend is running."
-      );
+      setNotice("Could not reach FastAPI. Check that the backend is running.");
     } finally {
-      window.clearTimeout(timeout);
       setLoading(false);
+    }
+  };
+
+  const tailorResume = async () => {
+    if (!jobId) {
+      setNotice("Tailoring from a selected saved job is required for this workflow.");
+      return;
+    }
+
+    setTailoring(true);
+    setNotice("");
+    try {
+      const res = await fetch(`http://localhost:8000/api/jobs/${encodeURIComponent(jobId)}/tailor`, {
+        method: "POST",
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        setNotice(data?.detail || "Resume tailoring failed.");
+        return;
+      }
+      setTailoredResume(data.tailored_resume || "");
+      setNotice("Tailored resume generated. Review it before using it.");
+    } catch {
+      setNotice("Could not reach FastAPI for resume tailoring.");
+    } finally {
+      setTailoring(false);
     }
   };
 
@@ -221,16 +286,29 @@ export default function ResumeStudio() {
           <span className="section-kicker">03 / ANALYZE</span>
           <h2>See where the story needs work.</h2>
         </div>
-        <button
-          className="search-action"
-          type="button"
-          onClick={analyze}
-          disabled={loading || !resume || !jd}
-        >
-          <WandSparkles size={17} />
-          {loading ? "Analyzing..." : "Analyze match"}
-          <ArrowUpRight size={17} />
-        </button>
+        <div className="job-links">
+          <button
+            className="search-action"
+            type="button"
+            onClick={analyze}
+            disabled={loading || !resume || !jd}
+          >
+            <WandSparkles size={17} />
+            {loading ? "Analyzing..." : "Analyze match"}
+            <ArrowUpRight size={17} />
+          </button>
+          {jobId && (
+            <button
+              className="secondary-action"
+              type="button"
+              onClick={tailorResume}
+              disabled={tailoring || !resume || !jd}
+            >
+              <Sparkles size={17} />
+              {tailoring ? "Tailoring..." : "Tailor resume"}
+            </button>
+          )}
+        </div>
       </div>
 
       <section className="analysis-layout">
@@ -282,6 +360,27 @@ export default function ResumeStudio() {
           )}
         </div>
       </section>
+
+      {tailoredResume && (
+        <section className="studio-panel" style={{ marginTop: 24 }}>
+          <div className="panel-heading">
+            <div>
+              <span className="section-kicker">04 / TAILORED RESUME</span>
+              <h2>{jobTitle || "Target role"}</h2>
+            </div>
+          </div>
+          <textarea
+            className="studio-textarea"
+            style={{ minHeight: 520 }}
+            value={tailoredResume}
+            onChange={(e) => setTailoredResume(e.target.value)}
+          />
+          <p className="analysis-copy">
+            Review every change. The AI is instructed not to invent employers,
+            experience, metrics, certifications, or technologies.
+          </p>
+        </section>
+      )}
 
       {result && (
         <div className="success-strip">
