@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useRef, useState } from "react";
+import { FormEvent, useEffect, useRef, useState } from "react";
 import {
   ArrowUpRight,
   BriefcaseBusiness,
@@ -45,6 +45,17 @@ export default function JobDashboard() {
   const [activeTab, setActiveTab] = useState("Recommended");
   const [notice, setNotice] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => {
+    fetch("http://localhost:8000/api/resume/status")
+      .then((response) => (response.ok ? response.json() : null))
+      .then((data) => {
+        if (data?.uploaded) setUploadStatus("success");
+      })
+      .catch(() => {
+        // The upload control will show a status after the next upload attempt.
+      });
+  }, []);
 
   const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -287,6 +298,13 @@ export default function JobDashboard() {
                           2+ years
                         </span>
                       </div>
+
+                      {job.job_description && (
+                        <p className="job-description">
+                          {job.job_description.slice(0, 280)}
+                          {job.job_description.length > 280 ? "…" : ""}
+                        </p>
+                      )}
 
                       <div className="skill-row">
                         {["AWS", "Docker", "Kubernetes", "Terraform"].map((skill) => (
