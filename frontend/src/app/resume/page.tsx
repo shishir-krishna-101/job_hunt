@@ -83,14 +83,23 @@ export default function ResumeStudio() {
   };
 
   const analyze = async () => {
+    if (!resume.trim() || !jd.trim()) {
+      setNotice("Upload or paste your resume and add the job description before analyzing.");
+      return;
+    }
+
     setLoading(true);
     setNotice("");
+
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 90000);
 
     try {
       const res = await fetch("http://localhost:8000/api/resume/analyze", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ resume, jd }),
+        signal: controller.signal,
       });
       const raw = await res.text();
       let data: any = {};
@@ -105,9 +114,15 @@ export default function ResumeStudio() {
         return;
       }
       setResult(data);
-    } catch {
-      setNotice("Analysis failed. Check that the backend and Gemini key are available.");
+    } catch (error: any) {
+      setResult(null);
+      setNotice(
+        error?.name === "AbortError"
+          ? "Analysis timed out after 90 seconds. Check the FastAPI terminal."
+          : "Could not reach FastAPI. Check that the backend is running."
+      );
     } finally {
+      window.clearTimeout(timeout);
       setLoading(false);
     }
   };
