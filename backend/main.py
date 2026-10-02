@@ -81,8 +81,6 @@ def fetch_jobs(
     query: str,
     location: str = "India",
     country: str = "in",
-    experience: str = "mid-level",
-    employment_type: str = "FULLTIME",
     date_posted: str = "all",
     roles: str | None = None,
     db: Session = Depends(get_db),
@@ -93,8 +91,6 @@ def fetch_jobs(
             query=query,
             location=location,
             country=country,
-            experience=experience,
-            employment_type=employment_type,
             date_posted=date_posted,
             roles=selected_roles,
         )
