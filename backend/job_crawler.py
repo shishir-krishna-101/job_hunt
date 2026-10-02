@@ -76,7 +76,13 @@ def fetch_jobs_from_api(
             )
 
         payload = response.json()
-        for job in payload.get("data", []):
+        raw_jobs = payload.get("data", []) if isinstance(payload, dict) else []
+        if not isinstance(raw_jobs, list):
+            raw_jobs = []
+
+        for job in raw_jobs:
+            if not isinstance(job, dict):
+                continue
             job_id = job.get("job_id") or job.get("job_apply_link")
             if job_id and job_id in seen_ids:
                 continue
