@@ -101,7 +101,7 @@ export default function ResumeStudio() {
             <input
               ref={fileInputRef}
               type="file"
-              accept=".pdf,.doc,.docx"
+              accept=".pdf,.docx"
               className="sr-only"
               onChange={(e) => {
                 const file = e.target.files?.[0];
