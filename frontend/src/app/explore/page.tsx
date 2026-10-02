@@ -1,36 +1,92 @@
 "use client";
-import { Compass, ExternalLink } from "lucide-react";
+
+import { useEffect, useState } from "react";
+import { ArrowUpRight, BookOpen, CheckCircle2, Compass, ExternalLink, Sparkles } from "lucide-react";
+
+type Skill = {
+  id: number;
+  skill_name: string;
+  resource_url: string;
+};
 
 export default function ExploreTab() {
-  // Mock data for now until backend DB is fully hooked up
-  const missingSkills = [
-    { id: 1, skill: "Kubernetes", resource: "https://kubernetes.io/docs/tutorials/" },
-    { id: 2, skill: "AWS Lambda", resource: "https://aws.amazon.com/lambda/getting-started/" },
-  ];
+  const [skills, setSkills] = useState<Skill[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    fetch("http://localhost:8000/api/explore")
+      .then((res) => res.json())
+      .then((data) => setSkills(Array.isArray(data) ? data : []))
+      .catch(() => setSkills([]))
+      .finally(() => setLoading(false));
+  }, []);
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
-      <h2 className="text-2xl font-bold text-gray-800 flex items-center gap-2"><Compass /> To Explore</h2>
-      <p className="text-gray-600">These are the skills you lacked in your recent job matches. We used AI to find the best resources for you to improve.</p>
-
-      <div className="grid gap-4 mt-6">
-        {missingSkills.map(item => (
-          <div key={item.id} className="bg-white p-6 rounded-xl border border-gray-200 shadow-sm flex items-center justify-between">
-            <div>
-              <h3 className="text-lg font-bold text-gray-800">{item.skill}</h3>
-              <p className="text-sm text-gray-500 mt-1">Identified from: Senior Backend Engineer at TechCorp</p>
-            </div>
-            <a 
-              href={item.resource} 
-              target="_blank" 
-              rel="noreferrer"
-              className="flex items-center gap-2 px-4 py-2 bg-blue-50 text-blue-700 rounded-lg font-medium hover:bg-blue-100 transition"
-            >
-              Start Learning <ExternalLink className="w-4 h-4" />
-            </a>
+    <div className="inner-page">
+      <header className="inner-hero">
+        <div>
+          <span className="eyebrow">SKILL GAPS → SKILL GROWTH</span>
+          <h1>
+            Your
+            <br />
+            <em>next things to learn.</em>
+          </h1>
+          <p>
+            Skills that showed up as missing during your resume analyses live
+            here, with a resource link attached for the next step.
+          </p>
+        </div>
+        <div className="hero-note">
+          <div className="hero-note-icon"><Sparkles size={18} /></div>
+          <div>
+            <span>Career memory</span>
+            <strong>Recurring gaps stay visible instead of getting lost.</strong>
           </div>
-        ))}
+        </div>
+      </header>
+
+      <div className="explore-summary">
+        <div>
+          <span className="section-kicker">CURRENT BACKLOG</span>
+          <strong>{loading ? "—" : skills.length}</strong>
+          <span>skills to explore</span>
+        </div>
+        <div className="explore-summary-note">
+          <Compass size={18} />
+          <span>Use each role analysis to grow this list.</span>
+        </div>
       </div>
+
+      {loading ? (
+        <div className="empty-state">
+          <div className="empty-mark"><BookOpen size={22} /></div>
+          <h3>Loading your skill backlog.</h3>
+        </div>
+      ) : skills.length === 0 ? (
+        <div className="empty-state">
+          <div className="empty-mark"><CheckCircle2 size={22} /></div>
+          <span className="section-kicker">ALL CLEAR</span>
+          <h3>No recurring gaps yet.</h3>
+          <p>Analyze a few target roles from Resume Studio and this space will begin to fill.</p>
+          <a className="secondary-action" href="/resume">
+            Open Resume Studio <ArrowUpRight size={15} />
+          </a>
+        </div>
+      ) : (
+        <div className="explore-grid">
+          {skills.map((item) => (
+            <article className="explore-card" key={item.id}>
+              <div className="explore-icon"><BookOpen size={19} /></div>
+              <span className="section-kicker">TO EXPLORE</span>
+              <h2>{item.skill_name}</h2>
+              <p>Identified from your previous resume / job-description comparison.</p>
+              <a href={item.resource_url} target="_blank" rel="noreferrer" className="text-link">
+                Learn the skill <ExternalLink size={15} />
+              </a>
+            </article>
+          ))}
+        </div>
+      )}
     </div>
   );
 }
