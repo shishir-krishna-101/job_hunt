@@ -933,6 +933,35 @@ a {
   font-family: "DM Mono", monospace;
 }
 
+.upload-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.upload-status {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 7px 10px;
+  border-radius: 999px;
+  font-size: 10px;
+  font-weight: 700;
+  white-space: nowrap;
+}
+
+.upload-status-success {
+  color: #456015;
+  background: #eff5d2;
+  border: 1px solid #dbe9a1;
+}
+
+.upload-status-error {
+  color: #9a3f35;
+  background: #fce9e5;
+  border: 1px solid #f2c8c0;
+}
+
 .studio-textarea {
   width: 100%;
   min-height: 340px;
