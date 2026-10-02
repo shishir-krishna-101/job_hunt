@@ -531,6 +531,14 @@ a {
   font-size: 12px;
 }
 
+.job-description {
+  margin: 12px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.55;
+  max-width: 760px;
+}
+
 .skill-row {
   display: flex;
   flex-wrap: wrap;
