@@ -9,11 +9,7 @@ JSEARCH_URL = "https://jsearch.p.rapidapi.com/search"
 
 
 def fetch_jobs_from_api(query: str, location: str = "remote"):
-    """
-    Fetch current jobs through JSearch/RapidAPI.
-    Raises a descriptive error instead of silently returning an empty list
-    when provider configuration or the upstream request is broken.
-    """
+    """Fetch current jobs through JSearch/RapidAPI."""
     if not RAPIDAPI_KEY:
         raise RuntimeError(
             "RAPIDAPI_KEY is not configured. Add your RapidAPI JSearch key "
@@ -31,12 +27,7 @@ def fetch_jobs_from_api(query: str, location: str = "remote"):
     }
 
     try:
-        response = requests.get(
-            JSEARCH_URL,
-            headers=headers,
-            params=querystring,
-            timeout=20,
-        )
+        response = requests.get(JSEARCH_URL, headers=headers, params=querystring, timeout=20)
     except requests.RequestException as exc:
         raise RuntimeError(f"JSearch request failed: {exc}") from exc
 
@@ -45,10 +36,7 @@ def fetch_jobs_from_api(query: str, location: str = "remote"):
             detail = response.json()
         except ValueError:
             detail = response.text[:500]
-
-        raise RuntimeError(
-            f"JSearch returned HTTP {response.status_code}: {detail}"
-        )
+        raise RuntimeError(f"JSearch returned HTTP {response.status_code}: {detail}")
 
     payload = response.json()
     return payload.get("data", [])
