@@ -5,25 +5,50 @@ from dotenv import load_dotenv
 load_dotenv()
 
 RAPIDAPI_KEY = os.getenv("RAPIDAPI_KEY")
+JSEARCH_URL = "https://jsearch.p.rapidapi.com/search"
+
 
 def fetch_jobs_from_api(query: str, location: str = "remote"):
     """
-    Fetches real-time jobs using JSearch API (from RapidAPI).
-    This acts as our 'crawler' but is much more reliable than scraping HTML,
-    which usually gets IP banned.
+    Fetch current jobs through JSearch/RapidAPI.
+    Raises a descriptive error instead of silently returning an empty list
+    when provider configuration or the upstream request is broken.
     """
     if not RAPIDAPI_KEY:
-        return []
+        raise RuntimeError(
+            "RAPIDAPI_KEY is not configured. Add your RapidAPI JSearch key "
+            "to backend/.env and restart FastAPI."
+        )
 
-    url = "https://jsearch.p.rapidapi.com/search"
-    querystring = {"query": f"{query} in {location}", "page": "1", "num_pages": "1"}
-
+    querystring = {
+        "query": f"{query} in {location}",
+        "page": "1",
+        "num_pages": "1",
+    }
     headers = {
         "x-rapidapi-key": RAPIDAPI_KEY,
-        "x-rapidapi-host": "jsearch.p.rapidapi.com"
+        "x-rapidapi-host": "jsearch.p.rapidapi.com",
     }
 
-    response = requests.get(url, headers=headers, params=querystring)
-    if response.status_code == 200:
-        return response.json().get('data', [])
-    return []
+    try:
+        response = requests.get(
+            JSEARCH_URL,
+            headers=headers,
+            params=querystring,
+            timeout=20,
+        )
+    except requests.RequestException as exc:
+        raise RuntimeError(f"JSearch request failed: {exc}") from exc
+
+    if response.status_code != 200:
+        try:
+            detail = response.json()
+        except ValueError:
+            detail = response.text[:500]
+
+        raise RuntimeError(
+            f"JSearch returned HTTP {response.status_code}: {detail}"
+        )
+
+    payload = response.json()
+    return payload.get("data", [])
