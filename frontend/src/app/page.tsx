@@ -50,8 +50,61 @@ function FilterSelect({
   );
 }
 
+function MultiRoleFilter({
+  roles,
+  onChange,
+}: {
+  roles: string[];
+  onChange: (roles: string[]) => void;
+}) {
+  const options = [
+    "DevOps Engineer",
+    "Platform Engineer",
+    "Cloud Engineer",
+    "Site Reliability Engineer",
+    "SRE Engineer",
+    "Infrastructure Engineer",
+    "Cloud/DevOps Engineer",
+  ];
+
+  const toggleRole = (role: string) => {
+    onChange(
+      roles.includes(role)
+        ? roles.filter((item) => item !== role)
+        : [...roles, role]
+    );
+  };
+
+  return (
+    <details className="multi-role-filter">
+      <summary>
+        <span>
+          {roles.length === 1
+            ? roles[0]
+            : roles.length
+              ? `${roles.length} roles selected`
+              : "Select roles"}
+        </span>
+        <ChevronDown size={14} />
+      </summary>
+      <div className="multi-role-menu">
+        {options.map((option) => (
+          <label key={option} className="role-option">
+            <input
+              type="checkbox"
+              checked={roles.includes(option)}
+              onChange={() => toggleRole(option)}
+            />
+            <span>{option}</span>
+          </label>
+        ))}
+      </div>
+    </details>
+  );
+}
+
 export default function JobDashboard() {
-  const [role, setRole] = useState("DevOps Engineer");
+  const [roles, setRoles] = useState<string[]>(["DevOps Engineer"]);
   const [location, setLocation] = useState("Bangalore");
   const [experience, setExperience] = useState("mid-level");
   const [employmentType, setEmploymentType] = useState("FULLTIME");
@@ -135,12 +188,13 @@ export default function JobDashboard() {
 
     try {
       const params = new URLSearchParams({
-        query: role,
+        query: roles.join(", "),
         location,
         country: "in",
         experience,
         employment_type: employmentType,
         date_posted: datePosted,
+        roles: roles.join("|"),
       });
       const response = await fetch(
         `http://localhost:8000/api/jobs/fetch?${params.toString()}`
@@ -203,9 +257,9 @@ export default function JobDashboard() {
             <label htmlFor="role">ROLE OR COMPANY</label>
             <input
               id="role"
-              value={role}
-              onChange={(e) => setRole(e.target.value)}
-              placeholder="DevOps Engineer"
+              value={roles.join(", ")}
+              onChange={(e) => setRoles(e.target.value.split(",").map((item) => item.trim()).filter(Boolean))}
+              placeholder="DevOps Engineer, Platform Engineer"
             />
           </div>
         </div>
@@ -260,17 +314,7 @@ export default function JobDashboard() {
               { label: "India", value: "India" },
             ]}
           />
-          <FilterSelect
-            value={role}
-            onChange={setRole}
-            options={[
-              { label: "DevOps Engineer", value: "DevOps Engineer" },
-              { label: "SRE Engineer", value: "SRE Engineer" },
-              { label: "Cloud Engineer", value: "Cloud Engineer" },
-              { label: "Platform Engineer", value: "Platform Engineer" },
-              { label: "DevOps", value: "DevOps" },
-            ]}
-          />
+          <MultiRoleFilter roles={roles} onChange={setRoles} />
           <FilterSelect
             value={experience}
             onChange={setExperience}
