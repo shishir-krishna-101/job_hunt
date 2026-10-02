@@ -41,6 +41,7 @@ export default function JobDashboard() {
   const [jobs, setJobs] = useState<Job[]>([]);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
+  const [uploadStatus, setUploadStatus] = useState<"idle" | "success" | "error">("idle");
   const [activeTab, setActiveTab] = useState("Recommended");
   const [notice, setNotice] = useState("");
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -50,28 +51,48 @@ export default function JobDashboard() {
     if (!file) return;
 
     setNotice("");
+    setUploadStatus("idle");
     setUploading(true);
     const formData = new FormData();
     formData.append("file", file);
 
     try {
+      const controller = new AbortController();
+      const timeout = window.setTimeout(() => controller.abort(), 30000);
       const response = await fetch("http://localhost:8000/api/resume/upload", {
         method: "POST",
         body: formData,
+        signal: controller.signal,
       });
-      const data = await response.json();
-      if (!response.ok) {
+      const raw = await response.text();
+      let data: any = {};
+      try {
+        data = raw ? JSON.parse(raw) : {};
+      } catch {
+        data = { message: raw || "The backend returned an invalid response." };
+      }
+      window.clearTimeout(timeout);
+
+      if (!response.ok || data?.status === "error") {
+        setUploadStatus("error");
         setNotice(data?.message || `Resume upload failed (HTTP ${response.status}).`);
         return;
       }
-      setNotice(
-        data.status === "success"
-          ? "Resume uploaded and parsed locally."
-          : data.message || "Resume upload failed."
-      );
-    } catch (error) {
+      if (data?.status === "success") {
+        setUploadStatus("success");
+        setNotice(`Resume uploaded successfully — ${data.characters_extracted ?? 0} characters extracted.`);
+      } else {
+        setUploadStatus("error");
+        setNotice(data?.message || "Resume upload failed.");
+      }
+    } catch (error: any) {
       console.error(error);
-      setNotice("Backend is unavailable. Start the FastAPI server and try again.");
+      setUploadStatus("error");
+      setNotice(
+        error?.name === "AbortError"
+          ? "Resume upload timed out after 30 seconds."
+          : "Backend is unavailable. Start the FastAPI server and try again."
+      );
     } finally {
       setUploading(false);
       e.target.value = "";
@@ -319,14 +340,26 @@ export default function JobDashboard() {
               className="sr-only"
               onChange={handleFileUpload}
             />
-            <button
-              className="dark-action"
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-            >
-              <Upload size={16} />
-              {uploading ? "Uploading..." : "Upload resume"}
-            </button>
+            <div className="upload-control">
+              <button
+                className="dark-action"
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+              >
+                <Upload size={16} />
+                {uploading ? "Uploading..." : "Upload resume"}
+              </button>
+              {uploadStatus === "success" && (
+                <span className="upload-status upload-status-success">
+                  <span aria-hidden="true">✓</span> Uploaded
+                </span>
+              )}
+              {uploadStatus === "error" && (
+                <span className="upload-status upload-status-error">
+                  <span aria-hidden="true">×</span> Upload failed
+                </span>
+              )}
+            </div>
           </div>
 
           <div className="utility-card">
