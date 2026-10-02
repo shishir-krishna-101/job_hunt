@@ -5,7 +5,6 @@ import {
   ArrowUpRight,
   BriefcaseBusiness,
   Building2,
-  Check,
   ChevronDown,
   Clock3,
   FileText,
