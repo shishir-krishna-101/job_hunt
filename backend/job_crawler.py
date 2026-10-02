@@ -15,24 +15,15 @@ def fetch_jobs_from_api(
     experience: str = "mid-level",
     employment_type: str = "FULLTIME",
     date_posted: str = "all",
+    roles: list[str] | None = None,
 ):
-    """Fetch current jobs through the current JSearch/RapidAPI search-v2 endpoint."""
+    """Fetch and combine current jobs for one or more roles."""
     if not RAPIDAPI_KEY:
         raise RuntimeError(
-            "RAPIDAPI_KEY is not configured. Add your RapidAPI JSearch key "
-            "to backend/.env and restart FastAPI."
+            "RAPIDAPI_KEY is not configured. Add it to backend/.env and restart FastAPI."
         )
 
-    querystring = {
-        "query": f"{query} in {location}",
-        "page": "1",
-        "num_pages": "1",
-        "country": country,
-        "location": location,
-        "employment_types": employment_type,
-        "date_posted": date_posted,
-    }
-
+    search_roles = roles or [query]
     experience_requirements = {
         "entry-level": "under_3_years_experience",
         "mid-level": "more_than_3_years_experience",
@@ -40,24 +31,54 @@ def fetch_jobs_from_api(
         "all": None,
     }
     requirement = experience_requirements.get(experience.lower())
-    if requirement:
-        querystring["job_requirements"] = requirement
+
     headers = {
         "x-rapidapi-key": RAPIDAPI_KEY,
         "x-rapidapi-host": "jsearch.p.rapidapi.com",
     }
 
-    try:
-        response = requests.get(JSEARCH_URL, headers=headers, params=querystring, timeout=20)
-    except requests.RequestException as exc:
-        raise RuntimeError(f"JSearch request failed: {exc}") from exc
+    all_jobs = []
+    seen_ids = set()
 
-    if response.status_code != 200:
+    for role in search_roles:
+        querystring = {
+            "query": f"{role} in {location}",
+            "page": "1",
+            "num_pages": "1",
+            "country": country,
+            "location": location,
+            "employment_types": employment_type,
+            "date_posted": date_posted,
+        }
+        if requirement:
+            querystring["job_requirements"] = requirement
+
         try:
-            detail = response.json()
-        except ValueError:
-            detail = response.text[:500]
-        raise RuntimeError(f"JSearch returned HTTP {response.status_code}: {detail}")
+            response = requests.get(
+                JSEARCH_URL,
+                headers=headers,
+                params=querystring,
+                timeout=20,
+            )
+        except requests.RequestException as exc:
+            raise RuntimeError(f"JSearch request failed for '{role}': {exc}") from exc
 
-    payload = response.json()
-    return payload.get("data", [])
+        if response.status_code != 200:
+            try:
+                detail = response.json()
+            except ValueError:
+                detail = response.text[:500]
+            raise RuntimeError(
+                f"JSearch returned HTTP {response.status_code} for '{role}': {detail}"
+            )
+
+        payload = response.json()
+        for job in payload.get("data", []):
+            job_id = job.get("job_id") or job.get("job_apply_link")
+            if job_id and job_id in seen_ids:
+                continue
+            if job_id:
+                seen_ids.add(job_id)
+            all_jobs.append(job)
+
+    return all_jobs
