@@ -52,15 +52,26 @@ async def upload_resume_file(file: UploadFile = File(...), db: Session = Depends
             db.add(user)
         else:
             user.resume_text = text
+        if not text.strip():
+            return {"status": "error", "message": "No readable text was extracted from the resume."}
+
         db.commit()
-        return {"status": "success", "message": "Resume uploaded"}
+        return {
+            "status": "success",
+            "message": "Resume uploaded and parsed successfully",
+            "filename": file.filename,
+            "characters_extracted": len(text),
+        }
     except Exception as e:
-        return {"status": "error", "message": str(e)}
+        db.rollback()
+        return {"status": "error", "message": f"Resume processing failed: {str(e)}"}
 
 @app.get("/api/jobs/fetch")
 def fetch_jobs(query: str, location: str = "India", db: Session = Depends(get_db)):
-    jobs = job_crawler.fetch_jobs_from_api(query, location)
-    return jobs
+    try:
+        return job_crawler.fetch_jobs_from_api(query, location)
+    except Exception as e:
+        return {"status": "error", "message": str(e), "data": []}
 
 @app.post("/api/resume/analyze")
 def analyze_resume_endpoint(req: AnalyzeRequest, db: Session = Depends(get_db)):
