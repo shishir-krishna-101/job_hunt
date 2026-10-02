@@ -7,6 +7,7 @@ from database import engine, get_db
 import ai_service
 import job_crawler
 import PyPDF2
+from docx import Document
 import io
 
 models.Base.metadata.create_all(bind=engine)
@@ -34,13 +35,16 @@ async def upload_resume_file(file: UploadFile = File(...), db: Session = Depends
     try:
         content = await file.read()
         text = ""
-        if file.filename.endswith(".pdf"):
+        filename = (file.filename or "").lower()
+        if filename.endswith(".pdf"):
             reader = PyPDF2.PdfReader(io.BytesIO(content))
             for page in reader.pages:
-                text += page.extract_text() + "\n"
+                text += (page.extract_text() or "") + "\n"
+        elif filename.endswith(".docx"):
+            document = Document(io.BytesIO(content))
+            text = "\n".join(paragraph.text for paragraph in document.paragraphs if paragraph.text.strip())
         else:
-            # Fallback for text files or ignore
-            text = content.decode("utf-8", errors="ignore")
+            return {"status": "error", "message": "Unsupported resume format. Please upload PDF or DOCX."}
             
         user = db.query(models.User).first()
         if not user:
