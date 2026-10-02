@@ -9,13 +9,11 @@ import {
   ChevronDown,
   Clock3,
   FileText,
-  Heart,
   MapPin,
   Search,
   SlidersHorizontal,
   Sparkles,
   Upload,
-  X,
 } from "lucide-react";
 
 type Job = {
@@ -31,10 +29,10 @@ type Job = {
 
 function FilterButton({ children }: { children: React.ReactNode }) {
   return (
-    <button className="filter-chip" type="button">
+    <span className="filter-chip">
       <span>{children}</span>
       <ChevronDown size={14} />
-    </button>
+    </span>
   );
 }
 
@@ -268,16 +266,7 @@ export default function JobDashboard() {
                       </div>
 
                       <div className="job-actions">
-                        <button className="icon-action" type="button" aria-label="Not interested">
-                          <X size={17} />
-                        </button>
-                        <button className="icon-action" type="button" aria-label="Like job">
-                          <Heart size={17} />
-                        </button>
-                        <button className="ghost-action" type="button">
-                          <Sparkles size={15} />
-                          Ask AI
-                        </button>
+                        <span className="job-note">Use Resume Studio for an explicit AI match.</span>
                         <a
                           className="apply-action"
                           href={job.job_apply_link}
