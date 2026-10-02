@@ -60,6 +60,10 @@ export default function JobDashboard() {
         body: formData,
       });
       const data = await response.json();
+      if (!response.ok) {
+        setNotice(data?.message || `Resume upload failed (HTTP ${response.status}).`);
+        return;
+      }
       setNotice(
         data.status === "success"
           ? "Resume uploaded and parsed locally."
@@ -86,6 +90,11 @@ export default function JobDashboard() {
         )}&location=${encodeURIComponent(location)}`
       );
       const data = await response.json();
+      if (!response.ok || data?.status === "error") {
+        setJobs([]);
+        setNotice(data?.message || `Job search failed (HTTP ${response.status}).`);
+        return;
+      }
       if (Array.isArray(data)) {
         setJobs(data);
         setNotice(
