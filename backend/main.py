@@ -1,4 +1,5 @@
 from fastapi import FastAPI, Depends, UploadFile, File
+from fastapi.responses import StreamingResponse
 from fastapi.middleware.cors import CORSMiddleware
 from sqlalchemy.orm import Session
 from pydantic import BaseModel
@@ -96,6 +97,11 @@ def fetch_jobs(
         )
     except Exception as e:
         return {"status": "error", "message": str(e), "data": []}
+
+@app.get("/api/jobs/stream")
+def stream_jobs(query: str, location: str = "India", country: str = "in", date_posted: str = "all", roles: str | None = None):
+    selected_roles = [item.strip() for item in roles.split("|") if item.strip()] if roles else None
+    return StreamingResponse(job_crawler.stream_jobs_from_api(query=query, location=location, country=country, date_posted=date_posted, roles=selected_roles), media_type="application/x-ndjson", headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"})
 
 @app.post("/api/resume/analyze")
 def analyze_resume_endpoint(req: AnalyzeRequest, db: Session = Depends(get_db)):
